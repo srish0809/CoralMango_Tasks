@@ -1,0 +1,169 @@
+SECTION 1: DATABASE DESIGN
+Question 1
+TABLE 1
+<restaurant>
+id - integer
+name - string
+address - string
+description - string
+
+TABLE 2
+<review>
+id - integer
+restaurant_id - integer (foreign key to restaurant table)
+text - string
+timestamp - datetime
+
+TABLE 3
+<user>
+id - integer
+name - string
+email - string
+password - string
+
+TABLE 4
+<admin>
+id - integer
+user_id - integer (foreign key to user table)
+access_level - integer (1 for basic analytics, 2 for advanced analytics)
+
+The restaurant and review tables are related through a one-to-many relationship, with a single restaurant having multiple reviews.
+The user table is related to the review table through a one-to-many relationship, with a single user being able to write multiple reviews. 
+The admin table is related to the user table through a one-to-one relationship, with a single user having the option to be an admin with access to analytics.
+
+Question-2
+
+for user
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define('User', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    name: DataTypes.STRING,
+    email: DataTypes.STRING,
+    password: DataTypes.STRING
+  });
+
+  User.associate = models => {
+    User.hasMany(models.Review, {
+      foreignKey: 'user_id'
+    });
+    User.hasOne(models.Admin, {
+      foreignKey: 'user_id'
+    });
+  };
+
+  return User;
+};
+
+for restaurant
+module.exports = (sequelize, DataTypes) => {
+  const Restaurant = sequelize.define('Restaurant', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    name: DataTypes.STRING,
+    address: DataTypes.STRING,
+    description: DataTypes.STRING
+  });
+
+  Restaurant.associate = models => {
+    Restaurant.hasMany(models.Review, {
+      foreignKey: 'restaurant_id'
+    });
+  };
+
+  return Restaurant;
+};
+
+
+for Reviews
+module.exports = (sequelize, DataTypes) => {
+  const Review = sequelize.define('Review', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    text: DataTypes.STRING,
+    timestamp: DataTypes.DATE
+  });
+
+  Review.associate = models => {
+    Review.belongsTo(models.Restaurant, {
+      foreignKey: 'restaurant_id'
+    });
+    Review.belongsTo(models.User, {
+      foreignKey: 'user_id'
+    });
+  };
+
+  return Review;
+};
+
+
+for admin
+module.exports = (sequelize, DataTypes) => {
+  const Admin = sequelize.define('Admin', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    access_level: DataTypes.INTEGER
+  });
+
+  Admin.associate = models => {
+    Admin.belongsTo(models.User, {
+      foreignKey: 'user_id'
+    });
+  };
+
+  return Admin;
+};
+
+Question 3
+SELECT r.id, r.name AS `Restaurant Name`, COUNT(*) AS `Total Reviews`
+FROM restaurants r
+LEFT JOIN reviews rev ON r.id = rev.restaurant_id
+GROUP BY r.id
+
+ORM FOR THE ABOVE QUERY
+module.exports = (sequelize, DataTypes) => {
+  const Restaurant = sequelize.define('Restaurant', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    name: DataTypes.STRING,
+    address: DataTypes.STRING,
+    description: DataTypes.STRING
+  });
+
+  Restaurant.associate = models => {
+    Restaurant.hasMany(models.Review, {
+      foreignKey: 'restaurant_id'
+    });
+  };
+
+  Restaurant.getAdminData = async () => {
+    const data = await sequelize.query(`
+      SELECT r.id, r.name AS \`Restaurant Name\`, COUNT(*) AS \`Total Reviews\`
+      FROM restaurants r
+      LEFT JOIN reviews rev ON r.id = rev.restaurant_id
+      GROUP BY r.id
+    `, { type: sequelize.QueryTypes.SELECT });
+
+    return data;
+  };
+
+  return Restaurant;
+};
+
+
+
