@@ -5,14 +5,14 @@ TABLE 1
 id - integer
 name - string
 address - string
-description - string
+
 
 TABLE 2
 <review>
 id - integer
 restaurant_id - integer (foreign key to restaurant table)
 text - string
-timestamp - datetime
+
 
 TABLE 3
 <user>
